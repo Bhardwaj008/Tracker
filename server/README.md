@@ -45,3 +45,19 @@ Required env vars (see `.env.example`):
 
 Any other SMTP provider (SendGrid, Mailgun, SES, Postmark, your own mail
 server, etc.) works the same way — just point the same four env vars at it.
+
+### Hosts that block outbound SMTP: use Resend instead
+
+Many free PaaS hosts (Render's free tier included) block outbound SMTP ports
+(587/465) to prevent spam abuse — mail will hang and eventually time out with
+`ETIMEDOUT` even though the exact same SMTP config works fine locally or on a
+self-hosted server. If that happens, set `RESEND_API_KEY` (from
+[resend.com](https://resend.com), free tier, no card required) — when it's
+set, `sendOtpEmail` sends over Resend's HTTPS API instead of SMTP (HTTPS/443
+is never blocked). `RESEND_FROM` optionally overrides the from-address
+(defaults to `onboarding@resend.dev`, which works out of the box before you
+verify your own sending domain on Resend).
+
+No code changes are needed to move between the two — SMTP still works
+locally/self-hosted with zero config changes; Resend is only needed where
+SMTP ports are blocked.
