@@ -1,7 +1,8 @@
 const express = require('express');
 const { requireAuth } = require('../middleware/auth');
 const Goal = require('../models/Goal');
-const Milestone = require('../models/Milestone');
+const Topic = require('../models/Topic');
+const Subtopic = require('../models/Subtopic');
 const Task = require('../models/Task');
 const Subtask = require('../models/Subtask');
 const { computeGoalStatus } = require('../lib/rollup');
@@ -55,7 +56,11 @@ router.get('/:id', async (req, res) => {
     const goal = await Goal.findOne({ _id: req.params.id, userId: req.userId });
     if (!goal) return res.status(404).json({ error: 'Goal not found' });
 
-    const milestones = await Milestone.find({ goalId: goal._id, userId: req.userId })
+    const topics = await Topic.find({ goalId: goal._id, userId: req.userId })
+      .sort({ order: 1 })
+      .lean();
+
+    const subtopics = await Subtopic.find({ goalId: goal._id, userId: req.userId })
       .sort({ order: 1 })
       .lean();
 
@@ -75,20 +80,28 @@ router.get('/:id', async (req, res) => {
       subtasksByTask.get(key).push(st);
     }
 
-    const tasksByMilestone = new Map();
+    const tasksBySubtopic = new Map();
     for (const t of tasks) {
-      const key = String(t.milestoneId);
+      const key = String(t.subtopicId);
       const shapedTask = { ...t, subtasks: subtasksByTask.get(String(t._id)) || [] };
-      if (!tasksByMilestone.has(key)) tasksByMilestone.set(key, []);
-      tasksByMilestone.get(key).push(shapedTask);
+      if (!tasksBySubtopic.has(key)) tasksBySubtopic.set(key, []);
+      tasksBySubtopic.get(key).push(shapedTask);
     }
 
-    const shapedMilestones = milestones.map((m) => ({
-      ...m,
-      tasks: tasksByMilestone.get(String(m._id)) || [],
+    const subtopicsByTopic = new Map();
+    for (const s of subtopics) {
+      const key = String(s.topicId);
+      const shapedSubtopic = { ...s, tasks: tasksBySubtopic.get(String(s._id)) || [] };
+      if (!subtopicsByTopic.has(key)) subtopicsByTopic.set(key, []);
+      subtopicsByTopic.get(key).push(shapedSubtopic);
+    }
+
+    const shapedTopics = topics.map((t) => ({
+      ...t,
+      subtopics: subtopicsByTopic.get(String(t._id)) || [],
     }));
 
-    res.json({ goal: shapeGoal(goal), milestones: shapedMilestones });
+    res.json({ goal: shapeGoal(goal), topics: shapedTopics });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -115,7 +128,7 @@ router.patch('/:id', async (req, res) => {
   }
 });
 
-// DELETE /api/goals/:id -> cascade milestones/tasks/subtasks
+// DELETE /api/goals/:id -> cascade topics/subtopics/tasks/subtasks
 router.delete('/:id', async (req, res) => {
   try {
     const goal = await Goal.findOne({ _id: req.params.id, userId: req.userId });
@@ -126,7 +139,8 @@ router.delete('/:id', async (req, res) => {
 
     await Subtask.deleteMany({ taskId: { $in: taskIds } });
     await Task.deleteMany({ goalId: goal._id });
-    await Milestone.deleteMany({ goalId: goal._id });
+    await Subtopic.deleteMany({ goalId: goal._id });
+    await Topic.deleteMany({ goalId: goal._id });
     await Goal.deleteOne({ _id: goal._id });
 
     res.json({ ok: true });
@@ -135,8 +149,8 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-// POST /api/goals/:id/milestones
-router.post('/:id/milestones', async (req, res) => {
+// POST /api/goals/:id/topics
+router.post('/:id/topics', async (req, res) => {
   try {
     const goal = await Goal.findOne({ _id: req.params.id, userId: req.userId });
     if (!goal) return res.status(404).json({ error: 'Goal not found' });
@@ -144,13 +158,13 @@ router.post('/:id/milestones', async (req, res) => {
     const { title, order } = req.body || {};
     if (!title) return res.status(400).json({ error: 'title is required' });
 
-    const milestone = await Milestone.create({
+    const topic = await Topic.create({
       userId: req.userId,
       goalId: goal._id,
       title,
       order: order ?? 0,
     });
-    res.status(201).json(milestone);
+    res.status(201).json(topic);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

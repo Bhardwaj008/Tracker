@@ -1,7 +1,7 @@
 # Momentum — Client
 
-React + Vite frontend for Momentum, a Goals → Milestones → Tasks → Subtasks tracker built to be
-pinned to an iPhone home screen as a PWA. Plain CSS (no framework), `react-router-dom` for
+React + Vite frontend for Momentum, a Goals → Topics → Subtopics → Tasks → Subtasks tracker built
+to be pinned to an iPhone home screen as a PWA. Plain CSS (no framework), `react-router-dom` for
 routing, and a thin `fetch` wrapper in `src/api.js` talking to the Express API described in the
 shared contract.
 
@@ -53,9 +53,17 @@ src/
   api.js                 fetch wrapper (VITE_API_URL, Bearer token, throws {error} messages)
   App.jsx                routes
   context/AuthContext.jsx  token/user state, login/signup/logout
-  components/             shared UI (BottomSheet, GoalCard, MilestoneBlock, TaskRow, TimerButton, …)
-  components/forms/       bottom-sheet create/edit forms (goal, milestone, task, subtask)
-  pages/                  route screens (Login, Signup, Today, Goals, GoalDetail, Archive)
+  components/             shared UI (BottomSheet, SidePanel, GoalCard, ProgressRing, StreakBlock,
+                           WeightBreakdown, TopicBlock, SubtopicBlock, TaskRow, TimerButton, …)
+  components/forms/       bottom-sheet create/edit forms (goal, topic, subtopic, task, subtask)
+  pages/                  route screens (Login, Signup, Today, Goals, GoalDetail, Stats, Archive)
   styles/                 design tokens + global CSS (mobile-first, light/dark via prefers-color-scheme)
   utils/format.js         date/time/heatmap-level formatting helpers
+  utils/aggregate.js      client-side stat aggregation (weight-tier/streak/topic breakdowns) for
+                          the Today and Stats screens, derived from data already fetched elsewhere
 ```
+
+Navigation is a Notion-style side panel (`components/SidePanel.jsx`), not a bottom tab bar: a
+slide-out overlay below the ~900px breakpoint, a persistent fixed sidebar above it. It lists
+Today / Topics / Stats / Archive plus a Settings entry; the gear icon in the top app bar opens the
+same Settings sheet directly.

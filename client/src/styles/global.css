@@ -106,6 +106,14 @@ a { color: var(--ember); text-decoration: none; }
 
 .app-shell {
   display: flex;
+  flex-direction: row;
+  min-height: 100vh;
+}
+
+.app-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
   flex-direction: column;
   min-height: 100vh;
 }
@@ -120,6 +128,12 @@ a { color: var(--ember); text-decoration: none; }
   padding: max(0.85rem, env(safe-area-inset-top)) 1.1rem 0.85rem;
   background: var(--bg);
   border-bottom: 1px solid var(--border);
+}
+
+.app-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
 }
 
 .brand {
@@ -138,35 +152,108 @@ a { color: var(--ember); text-decoration: none; }
   width: 100%;
   max-width: 640px;
   margin: 0 auto;
-  padding: 1rem 1.1rem calc(5.5rem + env(safe-area-inset-bottom));
+  padding: 1rem 1.1rem max(1.25rem, env(safe-area-inset-bottom));
 }
 
-.bottom-nav {
+/* ---------------------------------------------------------------------- */
+/* Side panel navigation                                                   */
+/* ---------------------------------------------------------------------- */
+/* Replaces the old bottom-nav bar: a slide-out overlay panel below the
+   900px breakpoint (dim backdrop, same interaction pattern as
+   BottomSheet), a persistent Notion-style fixed sidebar at/above it. */
+
+.nav-toggle { }
+
+.nav-backdrop {
   position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 10;
-  display: flex;
-  justify-content: space-around;
-  background: var(--surface);
-  border-top: 1px solid var(--border);
-  padding: 0.5rem 0.5rem max(0.5rem, env(safe-area-inset-bottom));
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 90;
+  animation: fade-in 0.15s ease;
 }
 
-.nav-item {
-  flex: 1;
-  text-align: center;
-  color: var(--ink-muted);
-  font-size: 0.78rem;
-  font-weight: 600;
-  padding: 0.35rem 0;
-  border-radius: 10px;
+.side-panel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: 260px;
+  max-width: 80vw;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 1.1rem 0.9rem calc(1.1rem + env(safe-area-inset-bottom));
+  transform: translateX(-100%);
+  transition: transform 0.2s ease;
+  z-index: 95;
+  box-shadow: var(--shadow);
 }
-.nav-item.active { color: var(--ember); background: var(--ember-soft); }
+.side-panel.open { transform: translateX(0); }
+
+.side-panel-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+  padding: 0 0.4rem 1.1rem;
+}
+
+.side-panel-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  flex: 1;
+}
+
+.side-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.6rem 0.7rem;
+  border-radius: 10px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+  background: transparent;
+  border: none;
+  text-align: left;
+  width: 100%;
+}
+.side-nav-item.active { color: var(--ember); background: var(--ember-soft); }
+
+.side-nav-settings {
+  margin-top: auto;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  padding-top: 0.85rem;
+}
+
+.side-nav-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ink-muted);
+  flex-shrink: 0;
+}
+.side-nav-item.active .side-nav-dot { background: var(--ember); }
+
+@media (min-width: 900px) {
+  .nav-toggle { display: none; }
+  .nav-backdrop { display: none; }
+  .side-panel {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    transform: none;
+    box-shadow: none;
+  }
+}
 
 @media (min-width: 640px) {
-  .app-main { padding: 1.5rem 1.5rem calc(6rem + env(safe-area-inset-bottom)); }
+  .app-main { padding: 1.5rem 1.5rem max(1.5rem, env(safe-area-inset-bottom)); }
 }
 
 /* ---------------------------------------------------------------------- */
@@ -258,7 +345,71 @@ a { color: var(--ember); text-decoration: none; }
 .field-row > .field { flex: 1; }
 
 /* ---------------------------------------------------------------------- */
-/* Stat cards (Today)                                                      */
+/* Progress ring                                                           */
+/* ---------------------------------------------------------------------- */
+
+.progress-ring {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.progress-ring circle {
+  transition: stroke-dashoffset 0.3s ease;
+}
+
+.progress-ring-label {
+  position: absolute;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Today hero: ring + streak block                                        */
+/* ---------------------------------------------------------------------- */
+
+.today-hero {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.streak-block {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.flame-icon { flex-shrink: 0; }
+
+.streak-count {
+  font-size: 1.9rem;
+  font-weight: 800;
+  color: var(--ember);
+  line-height: 1;
+}
+
+.streak-label {
+  color: var(--ink-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-top: 0.15rem;
+}
+
+.streak-best {
+  color: var(--ink-muted);
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Stat cards (Today / Stats)                                              */
 /* ---------------------------------------------------------------------- */
 
 .stat-grid {
@@ -267,6 +418,8 @@ a { color: var(--ember); text-decoration: none; }
   gap: 0.75rem;
   margin-bottom: 1.25rem;
 }
+
+.stats-summary-grid { margin-top: 0.25rem; }
 
 .stat-card {
   background: var(--surface);
@@ -291,6 +444,110 @@ a { color: var(--ember); text-decoration: none; }
   text-transform: uppercase;
   letter-spacing: 0.03em;
   margin-top: 0.15rem;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Weight-tier breakdown (S/M/L/XL) — cards variant (Today) and bars       */
+/* variant (Stats). Colors reuse the tiered weight-badge coding below.    */
+/* ---------------------------------------------------------------------- */
+
+.tier-stat-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.6rem;
+  margin-bottom: 1.25rem;
+}
+
+.tier-stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 0.7rem 0.5rem;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+
+.tier-stat-value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+.tier-stat-value.tier-pine { color: var(--pine); }
+.tier-stat-value.tier-amber { color: var(--amber); }
+.tier-stat-value.tier-ember { color: var(--ember); }
+.tier-stat-value.tier-rust { color: var(--rust); }
+
+.tier-stat-label {
+  color: var(--ink-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-top: 0.2rem;
+}
+
+.weight-bar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin-bottom: 1.25rem;
+}
+
+.weight-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.weight-bar-count {
+  color: var(--ink-muted);
+  font-size: 0.78rem;
+  flex-shrink: 0;
+  min-width: 2.6rem;
+  text-align: right;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Topic ranked list (Stats)                                               */
+/* ---------------------------------------------------------------------- */
+
+.topic-rank-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.topic-rank-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 0.65rem 0.9rem;
+}
+
+.topic-rank-main { flex: 1; min-width: 0; }
+
+.topic-rank-title {
+  font-weight: 600;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.topic-rank-frac {
+  color: var(--ink-muted);
+  font-size: 0.76rem;
+  margin-top: 0.1rem;
+}
+
+.topic-rank-pct {
+  color: var(--ink-muted);
+  font-size: 0.82rem;
+  flex-shrink: 0;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -478,16 +735,25 @@ a { color: var(--ember); text-decoration: none; }
   width: 100%;
 }
 
+.goal-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.6rem;
+}
+
 .goal-card-title {
   display: block;
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   text-align: left;
   background: none;
   border: none;
   padding: 0;
   font-size: 1.05rem;
   font-weight: 700;
-  margin-bottom: 0.6rem;
+  margin-bottom: 0;
   color: var(--ink);
 }
 
@@ -495,6 +761,64 @@ a { color: var(--ember); text-decoration: none; }
   display: flex;
   gap: 0.5rem;
   margin-top: 0.85rem;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Notion-style nested outline preview (goal cards)                       */
+/* ---------------------------------------------------------------------- */
+
+.outline-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.75rem;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--ink-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.outline-preview {
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--border);
+}
+
+.outline-topic-title {
+  font-weight: 700;
+  font-size: 0.85rem;
+  margin-bottom: 0.35rem;
+}
+
+.outline-task-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.outline-task {
+  position: relative;
+  padding-left: 1rem;
+  font-size: 0.82rem;
+  color: var(--ink-muted);
+}
+.outline-task::before {
+  content: '–';
+  position: absolute;
+  left: 0;
+}
+.outline-task.done { text-decoration: line-through; }
+.outline-task-empty::before { content: ''; }
+
+.outline-more {
+  margin-top: 0.5rem;
+  color: var(--ink-muted);
+  font-size: 0.76rem;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -561,6 +885,13 @@ a { color: var(--ember); text-decoration: none; }
   margin-bottom: 1.25rem;
 }
 
+.goal-detail-header-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
 .goal-detail-desc {
   color: var(--ink-muted);
   font-size: 0.88rem;
@@ -582,10 +913,10 @@ a { color: var(--ember); text-decoration: none; }
 }
 
 /* ---------------------------------------------------------------------- */
-/* Milestone blocks                                                        */
+/* Topic blocks (renamed from Milestone blocks)                            */
 /* ---------------------------------------------------------------------- */
 
-.milestone-block {
+.topic-block {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 16px;
@@ -594,7 +925,7 @@ a { color: var(--ember); text-decoration: none; }
   overflow: hidden;
 }
 
-.milestone-header {
+.topic-header {
   display: flex;
   align-items: center;
   gap: 0.65rem;
@@ -605,42 +936,80 @@ a { color: var(--ember); text-decoration: none; }
   border: none;
 }
 
-.milestone-chevron {
+.topic-chevron {
   color: var(--ink-muted);
   transition: transform 0.15s ease;
   flex-shrink: 0;
 }
-.milestone-chevron.open { transform: rotate(90deg); }
+.topic-chevron.open { transform: rotate(90deg); }
 
-.milestone-header-main { flex: 1; min-width: 0; }
+.topic-header-main { flex: 1; min-width: 0; }
 
-.milestone-title {
+.topic-title {
   font-weight: 700;
   font-size: 0.95rem;
 }
 
-.milestone-progress-row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: 0.4rem;
-}
-
-.milestone-progress-pct {
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-  font-size: 0.75rem;
+.topic-meta {
   color: var(--ink-muted);
-  flex-shrink: 0;
+  font-size: 0.76rem;
+  margin-top: 0.2rem;
 }
 
-.milestone-body {
+.topic-body {
   border-top: 1px solid var(--border);
   padding: 0.75rem 1rem 1rem;
 }
 
-.milestone-actions {
+.topic-actions {
   padding: 0.5rem 1rem 0.85rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-continue {
+  width: 100%;
+  margin-bottom: 0.85rem;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Subtopic blocks — new level between Topic and Task, same accordion      */
+/* pattern as Topic blocks, indented and slightly smaller.                */
+/* ---------------------------------------------------------------------- */
+
+.subtopic-block {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  margin: 0 0 0.65rem 0.75rem;
+  overflow: hidden;
+}
+
+.subtopic-header {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.7rem 0.85rem;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: none;
+}
+
+.subtopic-header-main { flex: 1; min-width: 0; }
+
+.subtopic-title {
+  font-weight: 700;
+  font-size: 0.88rem;
+}
+
+.subtopic-body {
+  border-top: 1px solid var(--border);
+  padding: 0.65rem 0.85rem 0.85rem;
+}
+
+.subtopic-actions {
+  padding: 0.4rem 0.85rem 0.7rem;
   display: flex;
   gap: 0.5rem;
 }
@@ -655,6 +1024,14 @@ a { color: var(--ember); text-decoration: none; }
   padding: 0.75rem 0.85rem;
   margin-bottom: 0.6rem;
   background: var(--bg);
+}
+
+.task-row-highlight {
+  animation: task-highlight-pulse 1.6s ease;
+}
+@keyframes task-highlight-pulse {
+  0% { background: var(--ember-soft); border-color: var(--ember); }
+  100% { background: var(--bg); border-color: var(--border); }
 }
 
 .task-row-top {
@@ -710,7 +1087,7 @@ a { color: var(--ember); text-decoration: none; }
   background: var(--surface-2);
   color: var(--ink-muted);
 }
-.weight-badge.weight-S { background: var(--surface-2); color: var(--ink-muted); }
+.weight-badge.weight-S { background: var(--pine-soft); color: var(--pine); }
 .weight-badge.weight-M { background: var(--amber-soft); color: var(--amber); }
 .weight-badge.weight-L { background: var(--ember-soft); color: var(--ember); }
 .weight-badge.weight-XL { background: var(--rust-soft); color: var(--rust); }

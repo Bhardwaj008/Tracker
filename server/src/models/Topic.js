@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const milestoneSchema = new mongoose.Schema({
+const topicSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   goalId: { type: mongoose.Schema.Types.ObjectId, ref: 'Goal', required: true },
   title: { type: String, required: true, trim: true },
@@ -9,6 +9,6 @@ const milestoneSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
-milestoneSchema.index({ goalId: 1 });
+topicSchema.index({ goalId: 1 });
 
-module.exports = mongoose.model('Milestone', milestoneSchema);
+module.exports = mongoose.model('Topic', topicSchema);

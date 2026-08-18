@@ -1,7 +1,8 @@
 const mongoose = require('mongoose');
 const Task = require('../models/Task');
 const Subtask = require('../models/Subtask');
-const Milestone = require('../models/Milestone');
+const Subtopic = require('../models/Subtopic');
+const Topic = require('../models/Topic');
 const Goal = require('../models/Goal');
 const Activity = require('../models/Activity');
 
@@ -15,6 +16,18 @@ const WEIGHT_SWITCH = {
     { case: { $eq: ['$weight', 'M'] }, then: WEIGHT_POINTS.M },
     { case: { $eq: ['$weight', 'L'] }, then: WEIGHT_POINTS.L },
     { case: { $eq: ['$weight', 'XL'] }, then: WEIGHT_POINTS.XL },
+  ],
+  default: WEIGHT_POINTS.M,
+};
+
+// Same mapping, but for use inside a $map over an array variable (`$$t`)
+// rather than the pipeline's current document.
+const WEIGHT_SWITCH_MAPPED = {
+  branches: [
+    { case: { $eq: ['$$t.weight', 'S'] }, then: WEIGHT_POINTS.S },
+    { case: { $eq: ['$$t.weight', 'M'] }, then: WEIGHT_POINTS.M },
+    { case: { $eq: ['$$t.weight', 'L'] }, then: WEIGHT_POINTS.L },
+    { case: { $eq: ['$$t.weight', 'XL'] }, then: WEIGHT_POINTS.XL },
   ],
   default: WEIGHT_POINTS.M,
 };
@@ -111,13 +124,13 @@ async function recomputeTask(taskId) {
 }
 
 /**
- * Milestone.progress = weighted average of its Tasks' progress, weight =
+ * Subtopic.progress = weighted average of its Tasks' progress, weight =
  * the task's weight->points value. Computed via aggregation ($group with
  * weighted $sum) rather than pulling tasks into Node and reducing in JS.
  */
-async function recomputeMilestone(milestoneId) {
+async function recomputeSubtopic(subtopicId) {
   const [agg] = await Task.aggregate([
-    { $match: { milestoneId: new mongoose.Types.ObjectId(milestoneId) } },
+    { $match: { subtopicId: new mongoose.Types.ObjectId(subtopicId) } },
     {
       $project: {
         progress: 1,
@@ -134,45 +147,35 @@ async function recomputeMilestone(milestoneId) {
   ]);
 
   const progress = agg && agg.totalPoints > 0 ? Math.round(agg.weightedSum / agg.totalPoints) : 0;
-  return Milestone.findByIdAndUpdate(milestoneId, { progress }, { new: true });
+  return Subtopic.findByIdAndUpdate(subtopicId, { progress }, { new: true });
 }
 
 /**
- * Goal.progress = average of its Milestones' progress, weight = the sum of
- * points of the tasks under that milestone (heavier/more-populated
- * milestones count more). Uses $lookup + $group so the whole rollup happens
+ * Topic.progress = average of its Subtopics' progress, weight = the sum of
+ * points of the tasks under that subtopic (heavier/more-populated
+ * subtopics count more). Uses $lookup + $group so the whole rollup happens
  * inside Mongo.
  */
-async function recomputeGoal(goalId) {
-  const rows = await Milestone.aggregate([
-    { $match: { goalId: new mongoose.Types.ObjectId(goalId) } },
+async function recomputeTopic(topicId) {
+  const rows = await Subtopic.aggregate([
+    { $match: { topicId: new mongoose.Types.ObjectId(topicId) } },
     {
       $lookup: {
         from: 'tasks',
         localField: '_id',
-        foreignField: 'milestoneId',
+        foreignField: 'subtopicId',
         as: 'tasks',
       },
     },
     {
       $project: {
         progress: 1,
-        milestoneWeight: {
+        subtopicWeight: {
           $sum: {
             $map: {
               input: '$tasks',
               as: 't',
-              in: {
-                $switch: {
-                  branches: [
-                    { case: { $eq: ['$$t.weight', 'S'] }, then: WEIGHT_POINTS.S },
-                    { case: { $eq: ['$$t.weight', 'M'] }, then: WEIGHT_POINTS.M },
-                    { case: { $eq: ['$$t.weight', 'L'] }, then: WEIGHT_POINTS.L },
-                    { case: { $eq: ['$$t.weight', 'XL'] }, then: WEIGHT_POINTS.XL },
-                  ],
-                  default: WEIGHT_POINTS.M,
-                },
-              },
+              in: { $switch: WEIGHT_SWITCH_MAPPED },
             },
           },
         },
@@ -181,8 +184,63 @@ async function recomputeGoal(goalId) {
     {
       $group: {
         _id: null,
-        weightedSum: { $sum: { $multiply: ['$progress', '$milestoneWeight'] } },
-        totalWeight: { $sum: '$milestoneWeight' },
+        weightedSum: { $sum: { $multiply: ['$progress', '$subtopicWeight'] } },
+        totalWeight: { $sum: '$subtopicWeight' },
+      },
+    },
+  ]);
+
+  const row = rows[0];
+  const progress = row && row.totalWeight > 0 ? Math.round(row.weightedSum / row.totalWeight) : 0;
+  return Topic.findByIdAndUpdate(topicId, { progress }, { new: true });
+}
+
+/**
+ * Goal.progress = average of its Topics' progress, weight = the sum of
+ * points of ALL tasks under that topic, across every one of its Subtopics
+ * (heavier/more-populated topics count more). One more hop than
+ * recomputeTopic: Topic -> Subtopics -> Tasks, still entirely inside Mongo
+ * (the second $lookup matches against the array of subtopic ids produced
+ * by the first, which Mongo treats as an implicit $in).
+ */
+async function recomputeGoal(goalId) {
+  const rows = await Topic.aggregate([
+    { $match: { goalId: new mongoose.Types.ObjectId(goalId) } },
+    {
+      $lookup: {
+        from: 'subtopics',
+        localField: '_id',
+        foreignField: 'topicId',
+        as: 'subtopics',
+      },
+    },
+    {
+      $lookup: {
+        from: 'tasks',
+        localField: 'subtopics._id',
+        foreignField: 'subtopicId',
+        as: 'tasks',
+      },
+    },
+    {
+      $project: {
+        progress: 1,
+        topicWeight: {
+          $sum: {
+            $map: {
+              input: '$tasks',
+              as: 't',
+              in: { $switch: WEIGHT_SWITCH_MAPPED },
+            },
+          },
+        },
+      },
+    },
+    {
+      $group: {
+        _id: null,
+        weightedSum: { $sum: { $multiply: ['$progress', '$topicWeight'] } },
+        totalWeight: { $sum: '$topicWeight' },
       },
     },
   ]);
@@ -221,7 +279,8 @@ module.exports = {
   bumpActivity,
   applyCompletionChange,
   recomputeTask,
-  recomputeMilestone,
+  recomputeSubtopic,
+  recomputeTopic,
   recomputeGoal,
   computeGoalStatus,
 };

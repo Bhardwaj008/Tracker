@@ -2,7 +2,7 @@ const express = require('express');
 const { requireAuth } = require('../middleware/auth');
 const Subtask = require('../models/Subtask');
 const Task = require('../models/Task');
-const { recomputeTask, recomputeMilestone, recomputeGoal } = require('../lib/rollup');
+const { recomputeTask, recomputeSubtopic, recomputeTopic, recomputeGoal } = require('../lib/rollup');
 
 const router = express.Router();
 router.use(requireAuth);
@@ -23,7 +23,8 @@ router.patch('/:id', async (req, res) => {
     const task = await Task.findById(subtask.taskId);
     if (task) {
       await recomputeTask(task._id);
-      await recomputeMilestone(task.milestoneId);
+      await recomputeSubtopic(task.subtopicId);
+      await recomputeTopic(task.topicId);
       await recomputeGoal(task.goalId);
     }
 
@@ -44,7 +45,8 @@ router.delete('/:id', async (req, res) => {
 
     if (task) {
       await recomputeTask(task._id);
-      await recomputeMilestone(task.milestoneId);
+      await recomputeSubtopic(task.subtopicId);
+      await recomputeTopic(task.topicId);
       await recomputeGoal(task.goalId);
     }
 

@@ -16,7 +16,7 @@ export default function TaskRow({
   const isOverdue = task.dueDate && !task.completed && new Date(task.dueDate) < new Date(new Date().toDateString());
 
   return (
-    <div className="task-row">
+    <div className="task-row" id={`task-${task._id || task.id}`}>
       <div className="task-row-top">
         <button
           type="button"

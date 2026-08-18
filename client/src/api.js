@@ -59,15 +59,21 @@ export const api = {
   updateGoal: (id, data) => request(`/goals/${id}`, { method: 'PATCH', body: data }),
   deleteGoal: (id) => request(`/goals/${id}`, { method: 'DELETE' }),
 
-  // Milestones
-  createMilestone: (goalId, data) =>
-    request(`/goals/${goalId}/milestones`, { method: 'POST', body: data }),
-  updateMilestone: (id, data) => request(`/milestones/${id}`, { method: 'PATCH', body: data }),
-  deleteMilestone: (id) => request(`/milestones/${id}`, { method: 'DELETE' }),
+  // Topics (was Milestones)
+  createTopic: (goalId, data) =>
+    request(`/goals/${goalId}/topics`, { method: 'POST', body: data }),
+  updateTopic: (id, data) => request(`/topics/${id}`, { method: 'PATCH', body: data }),
+  deleteTopic: (id) => request(`/topics/${id}`, { method: 'DELETE' }),
 
-  // Tasks
-  createTask: (milestoneId, data) =>
-    request(`/milestones/${milestoneId}/tasks`, { method: 'POST', body: data }),
+  // Subtopics (new level between Topic and Task)
+  createSubtopic: (topicId, data) =>
+    request(`/topics/${topicId}/subtopics`, { method: 'POST', body: data }),
+  updateSubtopic: (id, data) => request(`/subtopics/${id}`, { method: 'PATCH', body: data }),
+  deleteSubtopic: (id) => request(`/subtopics/${id}`, { method: 'DELETE' }),
+
+  // Tasks (now created under a Subtopic, not a Topic)
+  createTask: (subtopicId, data) =>
+    request(`/subtopics/${subtopicId}/tasks`, { method: 'POST', body: data }),
   updateTask: (id, data) => request(`/tasks/${id}`, { method: 'PATCH', body: data }),
   deleteTask: (id) => request(`/tasks/${id}`, { method: 'DELETE' }),
   startTimer: (id) => request(`/tasks/${id}/timer/start`, { method: 'POST' }),

@@ -7,6 +7,7 @@ import Today from './pages/Today';
 import Goals from './pages/Goals';
 import GoalDetail from './pages/GoalDetail';
 import Archive from './pages/Archive';
+import Stats from './pages/Stats';
 
 function ProtectedRoute({ children }) {
   const { isAuthenticated } = useAuth();
@@ -50,6 +51,7 @@ function AppRoutes() {
         <Route index element={<Today />} />
         <Route path="goals" element={<Goals />} />
         <Route path="goals/:id" element={<GoalDetail />} />
+        <Route path="stats" element={<Stats />} />
         <Route path="archive" element={<Archive />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

@@ -2,7 +2,8 @@ const express = require('express');
 const { requireAuth } = require('../middleware/auth');
 const User = require('../models/User');
 const Goal = require('../models/Goal');
-const Milestone = require('../models/Milestone');
+const Topic = require('../models/Topic');
+const Subtopic = require('../models/Subtopic');
 const Task = require('../models/Task');
 const Subtask = require('../models/Subtask');
 const Activity = require('../models/Activity');
@@ -14,10 +15,11 @@ router.use(requireAuth);
 router.get('/', async (req, res) => {
   try {
     const userId = req.userId;
-    const [user, goals, milestones, tasks, subtasks, activity] = await Promise.all([
+    const [user, goals, topics, subtopics, tasks, subtasks, activity] = await Promise.all([
       User.findById(userId, '-passwordHash').lean(),
       Goal.find({ userId }).lean(),
-      Milestone.find({ userId }).lean(),
+      Topic.find({ userId }).lean(),
+      Subtopic.find({ userId }).lean(),
       Task.find({ userId }).lean(),
       Subtask.find({ userId }).lean(),
       Activity.find({ userId }).lean(),
@@ -27,7 +29,8 @@ router.get('/', async (req, res) => {
       exportedAt: new Date().toISOString(),
       user,
       goals,
-      milestones,
+      topics,
+      subtopics,
       tasks,
       subtasks,
       activity,

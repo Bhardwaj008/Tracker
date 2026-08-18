@@ -2,7 +2,16 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import Heatmap from '../components/Heatmap';
+import ProgressRing from '../components/ProgressRing';
+import StreakBlock from '../components/StreakBlock';
+import WeightBreakdown from '../components/WeightBreakdown';
 import { formatDate } from '../utils/format';
+import {
+  bestStreakFromHeatmap,
+  emptyWeightCounts,
+  loadActiveGoalDetails,
+  weightCountsForToday,
+} from '../utils/aggregate';
 
 function TaskItemRow({ item }) {
   const navigate = useNavigate();
@@ -18,7 +27,8 @@ function TaskItemRow({ item }) {
         <div className="item-row-title">{item.title}</div>
         <div className="item-row-sub">
           {item.goalTitle}
-          {item.milestoneTitle ? ` · ${item.milestoneTitle}` : ''}
+          {item.topicTitle ? ` · ${item.topicTitle}` : ''}
+          {item.subtopicTitle ? ` · ${item.subtopicTitle}` : ''}
         </div>
       </div>
       {item.dueDate && <div className="item-row-due mono">{formatDate(item.dueDate)}</div>}
@@ -50,6 +60,7 @@ export default function Today() {
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [weightCounts, setWeightCounts] = useState(emptyWeightCounts());
 
   useEffect(() => {
     let active = true;
@@ -70,6 +81,25 @@ export default function Today() {
     };
   }, []);
 
+  useEffect(() => {
+    let active = true;
+    // Best-effort enhancement: GET /api/today doesn't return a per-weight
+    // "done today" breakdown, so derive it from goal-detail data we already
+    // have an endpoint for (see utils/aggregate.js). Failure here shouldn't
+    // block the rest of the Today screen.
+    loadActiveGoalDetails(api)
+      .then((details) => {
+        if (active) setWeightCounts(weightCountsForToday(details));
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const todayPct = data && data.totalToday ? (data.doneToday / data.totalToday) * 100 : 0;
+  const bestStreak = data ? bestStreakFromHeatmap(data.heatmap, data.streak) : 0;
+
   return (
     <div>
       <div className="page-header">
@@ -81,18 +111,12 @@ export default function Today() {
 
       {data && (
         <>
-          <div className="stat-grid">
-            <div className="stat-card">
-              <div className="stat-value mono">{data.streak ?? 0}</div>
-              <div className="stat-label">Day streak</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-value mono">
-                {data.doneToday ?? 0}/{data.totalToday ?? 0}
-              </div>
-              <div className="stat-label">Done today</div>
-            </div>
+          <div className="today-hero">
+            <ProgressRing progress={todayPct} size={84} strokeWidth={9} label={`${Math.round(todayPct)}%`} />
+            <StreakBlock streak={data.streak ?? 0} bestStreak={bestStreak} />
           </div>
+
+          <WeightBreakdown counts={weightCounts} variant="cards" />
 
           <Heatmap data={data.heatmap || []} />
 

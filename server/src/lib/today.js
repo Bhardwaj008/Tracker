@@ -65,7 +65,8 @@ async function getHeatmap(userId, days = 70) {
 
 function shapeTaskItem(t) {
   const goal = t.goalId && typeof t.goalId === 'object' ? t.goalId : null;
-  const milestone = t.milestoneId && typeof t.milestoneId === 'object' ? t.milestoneId : null;
+  const topic = t.topicId && typeof t.topicId === 'object' ? t.topicId : null;
+  const subtopic = t.subtopicId && typeof t.subtopicId === 'object' ? t.subtopicId : null;
   return {
     id: t._id,
     title: t.title,
@@ -75,8 +76,10 @@ function shapeTaskItem(t) {
     progress: t.progress,
     goalId: goal ? goal._id : t.goalId,
     goalTitle: goal ? goal.title : null,
-    milestoneId: milestone ? milestone._id : t.milestoneId,
-    milestoneTitle: milestone ? milestone.title : null,
+    topicId: topic ? topic._id : t.topicId,
+    topicTitle: topic ? topic.title : null,
+    subtopicId: subtopic ? subtopic._id : t.subtopicId,
+    subtopicTitle: subtopic ? subtopic.title : null,
   };
 }
 
@@ -84,7 +87,7 @@ function shapeTaskItem(t) {
  * Full /today payload: streak, done-today/total-today counters (scoped to
  * tasks whose dueDate falls on today, completed or not), and the three
  * actionable buckets (overdue / due today / upcoming) of incomplete tasks
- * with denormalized goal/milestone titles for display, plus the heatmap.
+ * with denormalized goal/topic/subtopic titles for display, plus the heatmap.
  */
 async function getTodayPayload(userId) {
   const uid = new mongoose.Types.ObjectId(userId);
@@ -98,7 +101,8 @@ async function getTodayPayload(userId) {
       getHeatmap(userId),
       Task.find({ userId: uid, completed: false, dueDate: { $ne: null } })
         .populate('goalId', 'title')
-        .populate('milestoneId', 'title')
+        .populate('topicId', 'title')
+        .populate('subtopicId', 'title')
         .sort({ dueDate: 1 })
         .lean(),
       Task.countDocuments({ userId: uid, dueDate: { $gte: startOfToday, $lt: endOfToday } }),

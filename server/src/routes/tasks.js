@@ -2,7 +2,13 @@ const express = require('express');
 const { requireAuth } = require('../middleware/auth');
 const Task = require('../models/Task');
 const Subtask = require('../models/Subtask');
-const { recomputeMilestone, recomputeGoal, recomputeTask, applyCompletionChange } = require('../lib/rollup');
+const {
+  recomputeSubtopic,
+  recomputeTopic,
+  recomputeGoal,
+  recomputeTask,
+  applyCompletionChange,
+} = require('../lib/rollup');
 
 const router = express.Router();
 router.use(requireAuth);
@@ -31,7 +37,8 @@ router.patch('/:id', async (req, res) => {
     }
 
     await task.save();
-    await recomputeMilestone(task.milestoneId);
+    await recomputeSubtopic(task.subtopicId);
+    await recomputeTopic(task.topicId);
     await recomputeGoal(task.goalId);
 
     const fresh = await Task.findById(task._id);
@@ -50,7 +57,8 @@ router.delete('/:id', async (req, res) => {
     await Subtask.deleteMany({ taskId: task._id });
     await Task.deleteOne({ _id: task._id });
 
-    await recomputeMilestone(task.milestoneId);
+    await recomputeSubtopic(task.subtopicId);
+    await recomputeTopic(task.topicId);
     await recomputeGoal(task.goalId);
 
     res.json({ ok: true });
@@ -127,7 +135,8 @@ router.post('/:id/subtasks', async (req, res) => {
     });
 
     await recomputeTask(task._id);
-    await recomputeMilestone(task.milestoneId);
+    await recomputeSubtopic(task.subtopicId);
+    await recomputeTopic(task.topicId);
     await recomputeGoal(task.goalId);
 
     res.status(201).json(subtask);

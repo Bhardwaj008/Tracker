@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import BottomSheet from '../BottomSheet';
 
-export default function MilestoneForm({ initial, onClose, onSubmit }) {
+// New: create/edit form for the Subtopic level, matching TopicForm/
+// MilestoneForm's shape exactly (title + order only).
+export default function SubtopicForm({ initial, onClose, onSubmit }) {
   const [title, setTitle] = useState(initial?.title || '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -19,7 +21,7 @@ export default function MilestoneForm({ initial, onClose, onSubmit }) {
       await onSubmit({ title: title.trim(), order: initial?.order ?? 0 });
       onClose();
     } catch (err) {
-      setError(err.message || 'Could not save milestone.');
+      setError(err.message || 'Could not save subtopic.');
     } finally {
       setSaving(false);
     }
@@ -27,7 +29,7 @@ export default function MilestoneForm({ initial, onClose, onSubmit }) {
 
   return (
     <BottomSheet
-      title={isEdit ? 'Edit Milestone' : 'New Milestone'}
+      title={isEdit ? 'Edit Subtopic' : 'New Subtopic'}
       onClose={onClose}
       onSave={handleSave}
       saveLabel={saving ? 'Saving…' : 'Save'}
@@ -35,7 +37,7 @@ export default function MilestoneForm({ initial, onClose, onSubmit }) {
     >
       <label className="field">
         <span>Title</span>
-        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="DSA Batch" autoFocus />
+        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Arrays & Strings" autoFocus />
       </label>
       {error && <p className="form-error">{error}</p>}
     </BottomSheet>

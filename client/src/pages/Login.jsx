@@ -29,7 +29,7 @@ export default function Login() {
       <div className="auth-card">
         <div className="brand-mark-lg">◆</div>
         <h1 className="brand-title">Momentum</h1>
-        <p className="auth-subtitle">Goals → Milestones → Tasks → Subtasks.</p>
+        <p className="auth-subtitle">Goals → Topics → Subtopics → Tasks → Subtasks.</p>
         <form className="auth-form" onSubmit={handleSubmit}>
           <label className="field">
             <span>Email</span>

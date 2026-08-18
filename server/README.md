@@ -1,7 +1,7 @@
 # Momentum API (server)
 
-Express + Mongoose REST API for the Momentum goal tracker (Goals -> Milestones -> Tasks ->
-Subtasks). JWT auth, server-side progress rollups, and streak/heatmap activity tracking.
+Express + Mongoose REST API for the Momentum goal tracker (Goals -> Topics -> Subtopics -> Tasks
+-> Subtasks). JWT auth, server-side progress rollups, and streak/heatmap activity tracking.
 
 ## Tech stack
 
@@ -10,12 +10,12 @@ layout:
 
 ```
 src/
-  models/       Mongoose schemas (User, Goal, Milestone, Task, Subtask, Activity)
+  models/       Mongoose schemas (User, Goal, Topic, Subtopic, Task, Subtask, Activity)
   routes/       Express routers, one per resource
   middleware/
     auth.js     requireAuth - verifies the JWT, sets req.userId
   lib/
-    rollup.js   progress recompute chain (task -> milestone -> goal) + on-track/status calc
+    rollup.js   progress recompute chain (task -> subtopic -> topic -> goal) + on-track/status calc
     today.js    streak / 70-day heatmap / Today-screen payload
   app.js        express app, middleware, route mounting
   server.js     entrypoint - connects mongoose, then app.listen
@@ -78,10 +78,11 @@ The API listens on `PORT` (default `4000`) and serves everything under `/api` (e
 ## Design notes (progress rollup, status, streaks)
 
 - **Progress is always server-computed, never trusted from the client.** Task progress is
-  derived from its subtasks (or the binary `completed` flag if it has none); Milestone/Goal
+  derived from its subtasks (or the binary `completed` flag if it has none); Subtopic/Topic/Goal
   progress are weighted rollups computed with MongoDB aggregation pipelines (`$group`,
   weighted `$sum`) rather than pulled into Node and reduced in JS, and cached on the document
-  so list views don't need to recompute on every read.
+  so list views don't need to recompute on every read. Any route that mutates a Task or Subtask
+  re-runs the full chain: `recomputeSubtopic -> recomputeTopic -> recomputeGoal`.
 - **On-track/behind + daily target** are computed on every read of `/goals` and `/goals/:id`
   (never persisted) from `startDate`/`dueDate`/cached `progress`.
 - **Streak/heatmap**: a Task flipping `completed` false->true increments today's `Activity`

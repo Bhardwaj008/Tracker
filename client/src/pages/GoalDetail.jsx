@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api';
-import ProgressBar from '../components/ProgressBar';
+import ProgressRing from '../components/ProgressRing';
 import { StatusChip, ProgressChip, DaysChip } from '../components/Chip';
-import MilestoneBlock from '../components/MilestoneBlock';
+import TopicBlock from '../components/TopicBlock';
 import GoalForm from '../components/forms/GoalForm';
-import MilestoneForm from '../components/forms/MilestoneForm';
+import TopicForm from '../components/forms/TopicForm';
+import SubtopicForm from '../components/forms/SubtopicForm';
 import TaskForm from '../components/forms/TaskForm';
 import SubtaskForm from '../components/forms/SubtaskForm';
 
@@ -14,11 +15,11 @@ export default function GoalDetail() {
   const navigate = useNavigate();
 
   const [goal, setGoal] = useState(null);
-  const [milestones, setMilestones] = useState([]);
+  const [topics, setTopics] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // sheet: { kind: 'goal' | 'milestone' | 'task' | 'subtask', initial, context }
+  // sheet: { kind: 'goal' | 'topic' | 'subtopic' | 'task' | 'subtask', initial, context }
   const [sheet, setSheet] = useState(null);
 
   const load = useCallback(() => {
@@ -28,7 +29,7 @@ export default function GoalDetail() {
       .getGoal(id)
       .then((res) => {
         setGoal(res.goal);
-        setMilestones(res.milestones || []);
+        setTopics(res.topics || []);
       })
       .catch((err) => setError(err.message || 'Could not load goal.'))
       .finally(() => setLoading(false));
@@ -64,24 +65,39 @@ export default function GoalDetail() {
     navigate('/goals');
   }
 
-  // --- Milestone actions ---
-  async function handleCreateMilestone(payload) {
-    await api.createMilestone(id, payload);
+  // --- Topic actions ---
+  async function handleCreateTopic(payload) {
+    await api.createTopic(id, payload);
     await load();
   }
-  async function handleUpdateMilestone(milestoneId, payload) {
-    await api.updateMilestone(milestoneId, payload);
+  async function handleUpdateTopic(topicId, payload) {
+    await api.updateTopic(topicId, payload);
     await load();
   }
-  async function handleDeleteMilestone(milestone) {
-    if (!window.confirm(`Delete milestone "${milestone.title}" and its tasks?`)) return;
-    await api.deleteMilestone(milestone._id || milestone.id);
+  async function handleDeleteTopic(topic) {
+    if (!window.confirm(`Delete topic "${topic.title}" and everything under it?`)) return;
+    await api.deleteTopic(topic._id || topic.id);
+    await load();
+  }
+
+  // --- Subtopic actions ---
+  async function handleCreateSubtopic(topicId, payload) {
+    await api.createSubtopic(topicId, payload);
+    await load();
+  }
+  async function handleUpdateSubtopic(subtopicId, payload) {
+    await api.updateSubtopic(subtopicId, payload);
+    await load();
+  }
+  async function handleDeleteSubtopic(subtopic) {
+    if (!window.confirm(`Delete subtopic "${subtopic.title}" and its tasks?`)) return;
+    await api.deleteSubtopic(subtopic._id || subtopic.id);
     await load();
   }
 
   // --- Task actions ---
-  async function handleCreateTask(milestoneId, payload) {
-    await api.createTask(milestoneId, payload);
+  async function handleCreateTask(subtopicId, payload) {
+    await api.createTask(subtopicId, payload);
     await load();
   }
   async function handleUpdateTask(taskId, payload) {
@@ -156,10 +172,12 @@ export default function GoalDetail() {
       {error && <p className="banner-error">{error}</p>}
 
       <div className="goal-detail-header">
-        <h1 className="page-title">{goal.title}</h1>
-        {goal.description && <p className="goal-detail-desc">{goal.description}</p>}
-        <div style={{ marginTop: '0.85rem' }}>
-          <ProgressBar progress={goal.progress} status={goal.status} />
+        <div className="goal-detail-header-top">
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h1 className="page-title">{goal.title}</h1>
+            {goal.description && <p className="goal-detail-desc">{goal.description}</p>}
+          </div>
+          <ProgressRing progress={goal.progress} status={goal.status} size={64} strokeWidth={7} />
         </div>
         <div className="chip-row">
           <ProgressChip progress={goal.progress} />
@@ -185,26 +203,29 @@ export default function GoalDetail() {
 
       <div className="section-heading-row">
         <span className="section-title" style={{ marginBottom: 0 }}>
-          Milestones
+          Topics
         </span>
         <button
           type="button"
           className="btn btn-ghost btn-sm"
-          onClick={() => setSheet({ kind: 'milestone', initial: null })}
+          onClick={() => setSheet({ kind: 'topic', initial: null })}
         >
-          + Milestone
+          + Topic
         </button>
       </div>
 
-      {milestones.length === 0 && <p className="empty-state">No milestones yet.</p>}
+      {topics.length === 0 && <p className="empty-state">No topics yet.</p>}
 
-      {milestones.map((milestone) => (
-        <MilestoneBlock
-          key={milestone._id || milestone.id}
-          milestone={milestone}
-          onEdit={(m) => setSheet({ kind: 'milestone', initial: m })}
-          onDelete={handleDeleteMilestone}
-          onAddTask={(m) => setSheet({ kind: 'task', initial: null, context: m._id || m.id })}
+      {topics.map((topic) => (
+        <TopicBlock
+          key={topic._id || topic.id}
+          topic={topic}
+          onEdit={(t) => setSheet({ kind: 'topic', initial: t })}
+          onDelete={handleDeleteTopic}
+          onAddSubtopic={(t) => setSheet({ kind: 'subtopic', initial: null, context: t._id || t.id })}
+          onEditSubtopic={(s) => setSheet({ kind: 'subtopic', initial: s })}
+          onDeleteSubtopic={handleDeleteSubtopic}
+          onAddTask={(subtopicId) => setSheet({ kind: 'task', initial: null, context: subtopicId })}
           taskHandlers={taskHandlers}
         />
       ))}
@@ -213,14 +234,26 @@ export default function GoalDetail() {
         <GoalForm initial={sheet.initial} onClose={closeSheet} onSubmit={handleEditGoal} />
       )}
 
-      {sheet?.kind === 'milestone' && (
-        <MilestoneForm
+      {sheet?.kind === 'topic' && (
+        <TopicForm
           initial={sheet.initial}
           onClose={closeSheet}
           onSubmit={(payload) =>
             sheet.initial
-              ? handleUpdateMilestone(sheet.initial._id || sheet.initial.id, payload)
-              : handleCreateMilestone(payload)
+              ? handleUpdateTopic(sheet.initial._id || sheet.initial.id, payload)
+              : handleCreateTopic(payload)
+          }
+        />
+      )}
+
+      {sheet?.kind === 'subtopic' && (
+        <SubtopicForm
+          initial={sheet.initial}
+          onClose={closeSheet}
+          onSubmit={(payload) =>
+            sheet.initial
+              ? handleUpdateSubtopic(sheet.initial._id || sheet.initial.id, payload)
+              : handleCreateSubtopic(sheet.context, payload)
           }
         />
       )}

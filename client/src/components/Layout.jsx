@@ -1,41 +1,49 @@
 import { useState } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
+import SidePanel from './SidePanel';
 import SettingsSheet from './SettingsSheet';
 
 export default function Layout() {
+  const [navOpen, setNavOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
   return (
     <div className="app-shell">
-      <header className="app-header">
-        <div className="brand">
-          <span className="brand-mark">◆</span> Momentum
-        </div>
-        <button
-          type="button"
-          className="icon-btn"
-          aria-label="Settings"
-          onClick={() => setSettingsOpen(true)}
-        >
-          ⚙
-        </button>
-      </header>
+      <SidePanel
+        open={navOpen}
+        onClose={() => setNavOpen(false)}
+        onOpenSettings={() => setSettingsOpen(true)}
+      />
 
-      <main className="app-main">
-        <Outlet />
-      </main>
+      <div className="app-content">
+        <header className="app-header">
+          <div className="app-header-left">
+            <button
+              type="button"
+              className="icon-btn nav-toggle"
+              aria-label="Open menu"
+              onClick={() => setNavOpen(true)}
+            >
+              ☰
+            </button>
+            <div className="brand">
+              <span className="brand-mark">◆</span> Momentum
+            </div>
+          </div>
+          <button
+            type="button"
+            className="icon-btn"
+            aria-label="Settings"
+            onClick={() => setSettingsOpen(true)}
+          >
+            ⚙
+          </button>
+        </header>
 
-      <nav className="bottom-nav">
-        <NavLink to="/" end className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-          Today
-        </NavLink>
-        <NavLink to="/goals" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-          Goals
-        </NavLink>
-        <NavLink to="/archive" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
-          Archive
-        </NavLink>
-      </nav>
+        <main className="app-main">
+          <Outlet />
+        </main>
+      </div>
 
       {settingsOpen && <SettingsSheet onClose={() => setSettingsOpen(false)} />}
     </div>

@@ -1,6 +1,7 @@
 // Reusable bottom-sheet-style modal: slides up from the bottom on mobile,
 // centered on wider viewports. Used for every create/edit form (goal,
-// milestone, task, subtask) so the interaction pattern stays consistent.
+// topic, subtopic, task, subtask) so the interaction pattern stays
+// consistent.
 export default function BottomSheet({
   title,
   onClose,
