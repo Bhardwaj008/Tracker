@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import VerifyOtp from './pages/VerifyOtp';
 import Today from './pages/Today';
 import Goals from './pages/Goals';
 import GoalDetail from './pages/GoalDetail';
@@ -37,6 +38,14 @@ function AppRoutes() {
         element={
           <PublicOnlyRoute>
             <Signup />
+          </PublicOnlyRoute>
+        }
+      />
+      <Route
+        path="/verify-otp"
+        element={
+          <PublicOnlyRoute>
+            <VerifyOtp />
           </PublicOnlyRoute>
         }
       />

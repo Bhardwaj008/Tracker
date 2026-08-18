@@ -16,8 +16,11 @@ export default function Signup() {
     setError('');
     setLoading(true);
     try {
-      await signup(name, email, password);
-      navigate('/', { replace: true });
+      const data = await signup(name, email, password);
+      navigate(`/verify-otp?email=${encodeURIComponent(data.email || email)}`, {
+        replace: true,
+        state: { email: data.email || email },
+      });
     } catch (err) {
       setError(err.message || 'Signup failed.');
     } finally {

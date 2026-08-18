@@ -41,9 +41,16 @@ export function AuthProvider({ children }) {
     [persist],
   );
 
-  const signup = useCallback(
-    async (name, email, password) => {
-      const data = await api.signup(name, email, password);
+  const signup = useCallback(async (name, email, password) => {
+    // Signup no longer logs the user in directly — it creates an unverified
+    // account and emails an OTP. Response is {message, email}, no token, so
+    // there's nothing to persist here; the caller routes to /verify-otp.
+    return api.signup(name, email, password);
+  }, []);
+
+  const verifyOtp = useCallback(
+    async (email, otp) => {
+      const data = await api.verifyOtp(email, otp);
       persist(data.token, data.user);
       return data;
     },
@@ -60,6 +67,7 @@ export function AuthProvider({ children }) {
     isAuthenticated: Boolean(token),
     login,
     signup,
+    verifyOtp,
     logout,
   };
 

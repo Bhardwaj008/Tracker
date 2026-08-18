@@ -18,6 +18,12 @@ export default function Login() {
       await login(email, password);
       navigate('/', { replace: true });
     } catch (err) {
+      if (err.needsVerification) {
+        navigate(`/verify-otp?email=${encodeURIComponent(err.email || email)}`, {
+          state: { email: err.email || email },
+        });
+        return;
+      }
       setError(err.message || 'Login failed.');
     } finally {
       setLoading(false);

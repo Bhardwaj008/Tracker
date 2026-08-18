@@ -10,6 +10,11 @@ const userSchema = new mongoose.Schema({
   },
   passwordHash: { type: String, required: true },
   createdAt: { type: Date, default: Date.now },
+  emailVerified: { type: Boolean, default: false },
+  otpHash: { type: String, default: null },
+  otpExpiresAt: { type: Date, default: null },
+  otpAttempts: { type: Number, default: 0 },
+  otpSentAt: { type: Date, default: null },
 });
 
 userSchema.index({ email: 1 }, { unique: true });

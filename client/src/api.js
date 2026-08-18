@@ -36,6 +36,13 @@ async function request(path, { method = 'GET', body } = {}) {
     const message = (data && data.error) || `Request failed with status ${res.status}`;
     const error = new Error(message);
     error.status = res.status;
+    // Login responds 403 with {needsVerification:true, email} for unverified
+    // accounts; surface those minimally so callers can redirect to /verify-otp
+    // instead of reinventing error-body parsing at each call site.
+    if (data && data.needsVerification) {
+      error.needsVerification = true;
+      error.email = data.email;
+    }
     throw error;
   }
 
@@ -48,6 +55,9 @@ export const api = {
     request('/auth/signup', { method: 'POST', body: { name, email, password } }),
   login: (email, password) =>
     request('/auth/login', { method: 'POST', body: { email, password } }),
+  verifyOtp: (email, otp) =>
+    request('/auth/verify-otp', { method: 'POST', body: { email, otp } }),
+  resendOtp: (email) => request('/auth/resend-otp', { method: 'POST', body: { email } }),
 
   // Today
   getToday: () => request('/today'),
